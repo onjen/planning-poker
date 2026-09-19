@@ -1,0 +1,14 @@
+{{ define "title" }}Home{{ end }}
+
+{{ define "main" }}
+<button hx-get="/trigger" hx-swap="none">
+  Trigger
+</button>
+<div hx-sse:connect="/events"></div>
+
+<div hx-get="/status"
+     hx-trigger="newvote from:body"
+     >
+     Current Time
+</div>
+{{ end }}

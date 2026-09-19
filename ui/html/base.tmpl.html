@@ -1,0 +1,21 @@
+{{ define "base" }}
+<!doctype html>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0/dist/htmx.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@4.0.0/dist/ext/hx-sse.min.js"></script>
+<html lang='en'>
+    <head>
+        <meta charset='utf-8'>
+        <title>{{ template "title" . }} - Planning Poker</title>
+    </head>
+    <body>
+        <header>
+            <h1><a href='/'>Planning Poker</a></h1>
+        </header>
+        {{ template "nav" . }}
+        <main>
+            {{ template "main" . }}
+        </main>
+        <footer>Powered by <a href='https://golang.org/'>Go</a></footer>
+    </body>
+</html>
+{{ end }}
