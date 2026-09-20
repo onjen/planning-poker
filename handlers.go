@@ -7,19 +7,21 @@ import (
 	"strconv"
 
 	"github.com/tmaxmax/go-sse"
+
+	"github.com/onjen/planning-poker/ui"
 )
 
 func (app *application) mainHandler(w http.ResponseWriter, r *http.Request) {
 	data := app.newTemplateData(r)
 
 	files := []string{
-		"./ui/html/base.tmpl.html",
-		"./ui/html/partials/controls.tmpl.html",
-		"./ui/html/partials/poll.tmpl.html",
-		"./ui/html/pages/home.tmpl.html",
+		"html/base.tmpl.html",
+		"html/partials/controls.tmpl.html",
+		"html/partials/poll.tmpl.html",
+		"html/pages/home.tmpl.html",
 	}
 
-	ts, err := template.ParseFiles(files...)
+	ts, err := template.ParseFS(ui.Files, files...)
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)
@@ -153,12 +155,12 @@ func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) controlsHandler(w http.ResponseWriter, r *http.Request) {
 	app.renderPartial(w, "controls", app.newTemplateData(r),
-		"./ui/html/partials/controls.tmpl.html")
+		"html/partials/controls.tmpl.html")
 }
 
 func (app *application) pollHandler(w http.ResponseWriter, r *http.Request) {
 	app.renderPartial(w, "poll", app.newTemplateData(r),
-		"./ui/html/partials/poll.tmpl.html")
+		"html/partials/poll.tmpl.html")
 }
 
 func (app *application) newPollHandler(w http.ResponseWriter, r *http.Request) {
@@ -205,7 +207,7 @@ func (app *application) newPollHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *application) usersHandler(w http.ResponseWriter, r *http.Request) {
 	app.renderPartial(w, "users", app.newTemplateData(r),
-		"./ui/html/partials/users.tmpl.html")
+		"html/partials/users.tmpl.html")
 }
 
 func (app *application) renderPartial(
@@ -214,7 +216,7 @@ func (app *application) renderPartial(
 	data templateData,
 	files ...string,
 ) {
-	ts, err := template.ParseFiles(files...)
+	ts, err := template.ParseFS(ui.Files, files...)
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)

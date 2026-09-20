@@ -5,12 +5,14 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/justinas/alice"
+
+	"github.com/onjen/planning-poker/ui"
 )
 
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
-	router.ServeFiles("/static/*filepath", http.Dir("./ui/static"))
+	router.Handler(http.MethodGet, "/static/*filepath", http.FileServerFS(ui.Files))
 
 	router.Handler(http.MethodGet, "/events", app.sseServer)
 
