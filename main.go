@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
@@ -63,6 +64,7 @@ type application struct {
 	logger         *slog.Logger
 	sseServer      *sse.Server
 	sessionManager *scs.SessionManager
+	templateCache  map[string]*template.Template
 
 	mu       sync.RWMutex
 	users    []*User
@@ -102,11 +104,18 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 12 * time.Hour
 
+	templateCache, err := newTemplateCache()
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
 	app := &application{
 		config:         cfg,
 		logger:         logger,
 		sseServer:      sseServer,
 		sessionManager: sessionManager,
+		templateCache:  templateCache,
 	}
 
 	srv := &http.Server{
@@ -118,7 +127,7 @@ func main() {
 	}
 
 	logger.Info("starting server", "addr", srv.Addr, "env", cfg.env)
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	logger.Error(err.Error())
 	os.Exit(1)
 }

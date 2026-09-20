@@ -2,38 +2,14 @@ package main
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"strconv"
 
 	"github.com/tmaxmax/go-sse"
-
-	"github.com/onjen/planning-poker/ui"
 )
 
 func (app *application) mainHandler(w http.ResponseWriter, r *http.Request) {
-	data := app.newTemplateData(r)
-
-	files := []string{
-		"html/base.tmpl.html",
-		"html/partials/controls.tmpl.html",
-		"html/partials/poll.tmpl.html",
-		"html/pages/home.tmpl.html",
-	}
-
-	ts, err := template.ParseFS(ui.Files, files...)
-	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "InternalServerError", http.StatusInternalServerError)
-		return
-	}
-
-	err = ts.ExecuteTemplate(w, "base", data)
-	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "InternalServerError", http.StatusInternalServerError)
-		return
-	}
+	app.render(w, http.StatusOK, "home.tmpl.html", "base", app.newTemplateData(r))
 }
 
 func (app *application) voteHandler(w http.ResponseWriter, r *http.Request) {
@@ -154,13 +130,11 @@ func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) controlsHandler(w http.ResponseWriter, r *http.Request) {
-	app.renderPartial(w, "controls", app.newTemplateData(r),
-		"html/partials/controls.tmpl.html")
+	app.render(w, http.StatusOK, "controls.tmpl.html", "controls", app.newTemplateData(r))
 }
 
 func (app *application) pollHandler(w http.ResponseWriter, r *http.Request) {
-	app.renderPartial(w, "poll", app.newTemplateData(r),
-		"html/partials/poll.tmpl.html")
+	app.render(w, http.StatusOK, "poll.tmpl.html", "poll", app.newTemplateData(r))
 }
 
 func (app *application) newPollHandler(w http.ResponseWriter, r *http.Request) {
@@ -206,27 +180,5 @@ func (app *application) newPollHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) usersHandler(w http.ResponseWriter, r *http.Request) {
-	app.renderPartial(w, "users", app.newTemplateData(r),
-		"html/partials/users.tmpl.html")
-}
-
-func (app *application) renderPartial(
-	w http.ResponseWriter,
-	name string,
-	data templateData,
-	files ...string,
-) {
-	ts, err := template.ParseFS(ui.Files, files...)
-	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "InternalServerError", http.StatusInternalServerError)
-		return
-	}
-
-	err = ts.ExecuteTemplate(w, name, data)
-	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "InternalServerError", http.StatusInternalServerError)
-		return
-	}
+	app.render(w, http.StatusOK, "users.tmpl.html", "users", app.newTemplateData(r))
 }
