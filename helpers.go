@@ -49,6 +49,9 @@ func (app *application) newTemplateData(r *http.Request) templateData {
 	data.Users = make([]User, len(app.users))
 	for i, u := range app.users {
 		data.Users[i] = *u
+		if u.HasVoted() {
+			data.VotedCount++
+		}
 	}
 	data.Poll = app.poll
 	data.Revealed = app.revealed

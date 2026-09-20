@@ -10,4 +10,5 @@ type templateData struct {
 	CurrentUserID   int
 	Revealed        bool
 	CanVote         bool
+	VotedCount      int
 }

@@ -10,6 +10,8 @@ import (
 func (app *application) routes() http.Handler {
 	router := httprouter.New()
 
+	router.ServeFiles("/static/*filepath", http.Dir("./ui/static"))
+
 	router.Handler(http.MethodGet, "/events", app.sseServer)
 
 	//authenticated := alice.New(app.requireAuthentication)

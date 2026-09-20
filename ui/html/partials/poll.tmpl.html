@@ -1,15 +1,17 @@
 {{ define "poll" }}
 <div id="poll" hx-get="/poll" hx-trigger="newpoll from:body, joined from:body" hx-swap="outerHTML">
+  <h3>Estimating</h3>
+  {{ if .Poll }}
+  <p class="poll-title">{{ .Poll }}</p>
+  {{ else }}
+  <p class="pending">Nothing yet &mdash; the moderator starts the round.</p>
+  {{ end }}
+
   {{ if .IsModerator }}
   <form hx-post="/poll" hx-target="#poll" hx-swap="outerHTML">
-    <input type="text" name="poll" placeholder="What are we voting on?" value="{{ .Poll }}" required>
-    <button type="submit">Set poll</button>
+    <input type="text" name="poll" placeholder="What are we estimating?" required>
+    <button type="submit">{{ if .Poll }}Next round{{ else }}Start round{{ end }}</button>
   </form>
-  {{ else }}
-  <label>
-    Current poll
-    <input type="text" readonly value="{{ .Poll }}">
-  </label>
   {{ end }}
 </div>
 {{ end }}

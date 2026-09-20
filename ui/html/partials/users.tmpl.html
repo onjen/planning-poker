@@ -1,16 +1,29 @@
 {{define "users"}}
-<h3>Current users{{ if .Revealed }} &mdash; revealed{{ end }}</h3>
+<h3>Participants</h3>
+{{ $me := .CurrentUserID }}
+{{ $revealed := .Revealed }}
+{{ if .Poll }}
+<p class="tally">
+  {{ if $revealed }}
+  All votes in
+  {{ else }}
+  {{ .VotedCount }} of {{ len .Users }} voted
+  {{ end }}
+</p>
+{{ end }}
 <ul>
-     {{ $me := .CurrentUserID }}
-     {{ $revealed := .Revealed }}
      {{ range .Users }}
      <li>
-       {{ .Name }} <small>({{ .Role }})</small>
-       {{ if .HasVoted }}
-         {{ if or $revealed (eq .ID $me) }}<strong>{{ .Vote }}</strong>{{ else }}voted{{ end }}
-       {{ else }}
-         &mdash;
-       {{ end }}
+       <span class="name">{{ .Name }}</span>
+       {{ if eq .ID $me }}<span class="tag">you</span>{{ end }}
+       <small>{{ .Role }}</small>
+       <span class="vote">
+         {{ if .HasVoted }}
+           {{ if or $revealed (eq .ID $me) }}<strong>{{ .Vote }}</strong>{{ else }}<span class="pending">voted</span>{{ end }}
+         {{ else }}
+           <span class="pending">waiting</span>
+         {{ end }}
+       </span>
      </li>
      {{ end }}
 </ul>

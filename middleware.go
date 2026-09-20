@@ -22,7 +22,7 @@ func (app *application) logRequest(next http.Handler) http.Handler {
 func secureHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().
-			Set("Content-Security-Policy", "default-src 'self'; script-src https://cdn.jsdelivr.net")
+			Set("Content-Security-Policy", "default-src 'self'; style-src 'self'; script-src 'self'")
 		w.Header().Set("Referrer-Policy", "origin-when-cross-origin")
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "deny")
