@@ -8,6 +8,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/tmaxmax/go-sse"
 )
 
@@ -16,10 +17,25 @@ type config struct {
 	env  string
 }
 
+type Role int
+
+const (
+	RoleModerator Role = iota
+	RoleUser
+)
+
+type User struct {
+	Name string
+	Role Role
+	ID   int
+}
+
 type application struct {
-	config    config
-	logger    *slog.Logger
-	sseServer *sse.Server
+	config         config
+	logger         *slog.Logger
+	sseServer      *sse.Server
+	sessionManager *scs.SessionManager
+	users          []*User
 }
 
 func main() {
@@ -29,8 +45,8 @@ func main() {
 
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	s := &sse.Server{}
-	defer s.Shutdown(nil)
+	sseServer := &sse.Server{}
+	defer sseServer.Shutdown(nil)
 
 	// Background loop to keep TCP streams alive
 	go func() {
@@ -47,14 +63,18 @@ func main() {
 			ping := &sse.Message{
 				Type: pingE,
 			}
-			_ = s.Publish(ping)
+			_ = sseServer.Publish(ping)
 		}
 	}()
 
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 12 * time.Hour
+
 	app := &application{
-		config:    cfg,
-		logger:    logger,
-		sseServer: s,
+		config:         cfg,
+		logger:         logger,
+		sseServer:      sseServer,
+		sessionManager: sessionManager,
 	}
 
 	srv := &http.Server{

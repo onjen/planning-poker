@@ -1,0 +1,5 @@
+- session storage
+- logging
+- template cache
+- user roles
+- voting system

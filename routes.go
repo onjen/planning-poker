@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/justinas/alice"
 )
 
 func (app *application) routes() http.Handler {
@@ -11,10 +12,17 @@ func (app *application) routes() http.Handler {
 
 	router.Handler(http.MethodGet, "/events", app.sseServer)
 
+	//authenticated := alice.New(app.requireAuthentication)
+
 	// Add write timeouts here
+	// router.Handler(http.MethodGet, "/", authenticated.ThenFunc(app.mainHandler))
 	router.HandlerFunc(http.MethodGet, "/", app.mainHandler)
 	router.HandlerFunc(http.MethodGet, "/trigger", app.triggerHandler)
 	router.HandlerFunc(http.MethodGet, "/status", app.statusHandler)
+	router.HandlerFunc(http.MethodPost, "/join", app.newUserHandler)
+	router.HandlerFunc(http.MethodGet, "/users", app.usersHandler)
 
-	return router
+	standard := alice.New(app.sessionManager.LoadAndSave, app.logRequest, secureHeaders)
+
+	return standard.Then(router)
 }

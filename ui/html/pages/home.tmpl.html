@@ -1,14 +1,25 @@
 {{ define "title" }}Home{{ end }}
 
 {{ define "main" }}
-<button hx-get="/trigger" hx-swap="none">
-  Trigger
-</button>
 <div hx-sse:connect="/events"></div>
+
+{{ if .IsAuthenticated }}
+<button hx-get="/trigger" hx-swap="none">
+  Vote
+</button>
+{{ else }}
+<form hx-post="/join">
+    <input type="text" name="username" placeholder="Username..." required>
+    <button type="submit">Join</button>
+  </form>
+{{ end }}
 
 <div hx-get="/status"
      hx-trigger="newvote from:body"
      >
      Current Time
+</div>
+
+<div hx-get="/users" hx-trigger="newuser from:body">
 </div>
 {{ end }}
