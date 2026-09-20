@@ -18,6 +18,7 @@ func (app *application) mainHandler(w http.ResponseWriter, r *http.Request) {
 	files := []string{
 		"./ui/html/base.tmpl.html",
 		"./ui/html/partials/nav.tmpl.html",
+		"./ui/html/partials/controls.tmpl.html",
 		"./ui/html/pages/home.tmpl.html",
 	}
 
@@ -99,7 +100,25 @@ func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+
+	// swap this client's join form for the authenticated controls
+	app.renderControls(w, true)
+}
+
+func (app *application) renderControls(w http.ResponseWriter, isAuthenticated bool) {
+	ts, err := template.ParseFiles("./ui/html/partials/controls.tmpl.html")
+	if err != nil {
+		app.logger.Error(err.Error())
+		http.Error(w, "InternalServerError", http.StatusInternalServerError)
+		return
+	}
+
+	err = ts.ExecuteTemplate(w, "controls", templateData{IsAuthenticated: isAuthenticated})
+	if err != nil {
+		app.logger.Error(err.Error())
+		http.Error(w, "InternalServerError", http.StatusInternalServerError)
+		return
+	}
 }
 
 func (app *application) usersHandler(w http.ResponseWriter, r *http.Request) {

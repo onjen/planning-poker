@@ -1,0 +1,14 @@
+{{ define "controls" }}
+<div id="controls">
+  {{ if .IsAuthenticated }}
+  <button hx-get="/trigger" hx-swap="none">
+    Vote
+  </button>
+  {{ else }}
+  <form hx-post="/join" hx-target="#controls" hx-swap="outerHTML">
+    <input type="text" name="username" placeholder="Username..." required>
+    <button type="submit">Join</button>
+  </form>
+  {{ end }}
+</div>
+{{ end }}
