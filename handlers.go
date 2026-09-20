@@ -60,11 +60,6 @@ func (app *application) statusHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
-	if app.isAuthenticated(r) {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "bad form", http.StatusBadRequest)
 		return
@@ -76,9 +71,13 @@ func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Username cannot be empty")
 		return
 	}
+	role := RoleUser
+	if len(app.users) == 0 {
+		role = RoleModerator
+	}
 	u := User{
 		Name: username,
-		Role: RoleModerator,
+		Role: role,
 		ID:   len(app.users),
 	}
 	app.users = append(app.users, &u)

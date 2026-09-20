@@ -24,6 +24,17 @@ const (
 	RoleUser
 )
 
+func (r Role) String() string {
+	switch r {
+	case RoleModerator:
+		return "Moderator"
+	case RoleUser:
+		return "User"
+	default:
+		return fmt.Sprintf("Role(%d)", int(r))
+	}
+}
+
 type User struct {
 	Name string
 	Role Role

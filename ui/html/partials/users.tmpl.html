@@ -2,7 +2,7 @@
 <h3>Current users</h3>
 <ul>
      {{ range .Users }}
-     <li>{{ .Name }}</li>
+     <li>{{ .Name }} <small>({{ .Role }})</small></li>
      {{ end }}
 </ul>
 {{end}}
