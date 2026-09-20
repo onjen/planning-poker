@@ -11,14 +11,17 @@ import (
 
 func (app *application) mainHandler(w http.ResponseWriter, r *http.Request) {
 	data := templateData{
+		IsModerator:     app.isModerator(r),
 		IsAuthenticated: app.isAuthenticated(r),
 		Users:           app.users,
+		Poll:            app.poll,
 	}
 
 	files := []string{
 		"./ui/html/base.tmpl.html",
 		"./ui/html/partials/nav.tmpl.html",
 		"./ui/html/partials/controls.tmpl.html",
+		"./ui/html/partials/poll.tmpl.html",
 		"./ui/html/pages/home.tmpl.html",
 	}
 
@@ -100,35 +103,69 @@ func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// swap this client's join form for the authenticated controls
-	app.renderControls(w, true)
+	w.Header().Set("HX-Trigger", `{"joined":{"target":"body"}}`)
+
+	data := templateData{IsAuthenticated: true}
+	app.renderPartial(w, "controls", data, "./ui/html/partials/controls.tmpl.html")
 }
 
-func (app *application) renderControls(w http.ResponseWriter, isAuthenticated bool) {
-	ts, err := template.ParseFiles("./ui/html/partials/controls.tmpl.html")
+func (app *application) pollHandler(w http.ResponseWriter, r *http.Request) {
+	data := templateData{
+		IsModerator: app.isModerator(r),
+		Poll:        app.poll,
+	}
+	app.renderPartial(w, "poll", data, "./ui/html/partials/poll.tmpl.html")
+}
+
+func (app *application) newPollHandler(w http.ResponseWriter, r *http.Request) {
+	if !app.isModerator(r) {
+		http.Error(w, "Only the moderator can set the poll", http.StatusForbidden)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+
+	poll := r.FormValue("poll")
+	if poll == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, "Poll cannot be empty")
+		return
+	}
+	app.poll = poll
+
+	// notify everyone to reload the poll
+	newpollE, err := sse.NewType("newpoll")
+	if err != nil {
+		app.logger.Error(err.Error())
+		http.Error(w, "InternalServerError", http.StatusInternalServerError)
+		return
+	}
+	err = app.sseServer.Publish(&sse.Message{Type: newpollE})
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "controls", templateData{IsAuthenticated: isAuthenticated})
-	if err != nil {
-		app.logger.Error(err.Error())
-		http.Error(w, "InternalServerError", http.StatusInternalServerError)
-		return
-	}
+	app.pollHandler(w, r)
 }
 
 func (app *application) usersHandler(w http.ResponseWriter, r *http.Request) {
 	data := templateData{
 		Users: app.users,
 	}
+	app.renderPartial(w, "users", data, "./ui/html/partials/users.tmpl.html")
+}
 
-	files := []string{
-		"./ui/html/partials/users.tmpl.html",
-	}
-
+func (app *application) renderPartial(
+	w http.ResponseWriter,
+	name string,
+	data templateData,
+	files ...string,
+) {
 	ts, err := template.ParseFiles(files...)
 	if err != nil {
 		app.logger.Error(err.Error())
@@ -136,7 +173,7 @@ func (app *application) usersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ts.ExecuteTemplate(w, "users", data)
+	err = ts.ExecuteTemplate(w, name, data)
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)

@@ -5,6 +5,8 @@
 
 {{ template "controls" . }}
 
+{{ template "poll" . }}
+
 <div hx-get="/status"
      hx-trigger="newvote from:body"
      >

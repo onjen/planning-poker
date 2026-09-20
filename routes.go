@@ -21,6 +21,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/status", app.statusHandler)
 	router.HandlerFunc(http.MethodPost, "/join", app.newUserHandler)
 	router.HandlerFunc(http.MethodGet, "/users", app.usersHandler)
+	router.HandlerFunc(http.MethodGet, "/poll", app.pollHandler)
+	router.HandlerFunc(http.MethodPost, "/poll", app.newPollHandler)
 
 	standard := alice.New(app.sessionManager.LoadAndSave, app.logRequest, secureHeaders)
 

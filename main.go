@@ -47,6 +47,7 @@ type application struct {
 	sseServer      *sse.Server
 	sessionManager *scs.SessionManager
 	users          []*User
+	poll           string
 }
 
 func main() {
