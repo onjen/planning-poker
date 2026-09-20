@@ -1,9 +1,28 @@
 {{ define "controls" }}
-<div id="controls">
+<div id="controls"
+     hx-get="/controls"
+     hx-trigger="newpoll from:body, newvote from:body, newuser from:body"
+     hx-swap="outerHTML">
   {{ if .IsAuthenticated }}
-  <button hx-get="/trigger" hx-swap="none">
-    Vote
-  </button>
+  {{ $vote := .Vote }}
+  {{ $canVote := .CanVote }}
+  <div role="group" aria-label="Story points">
+    {{ range .PointValues }}
+    <button hx-post="/vote"
+            hx-vals='{"points": {{ . }}}'
+            hx-target="#controls"
+            hx-swap="outerHTML"
+            aria-pressed="{{ if eq $vote . }}true{{ else }}false{{ end }}"
+            {{ if not $canVote }}disabled{{ end }}>
+      {{ . }}
+    </button>
+    {{ end }}
+  </div>
+  {{ if not .Poll }}
+  <p>Waiting for the moderator to set a poll</p>
+  {{ else if .Revealed }}
+  <p>Voting closed, wait for the next poll</p>
+  {{ end }}
   {{ else }}
   <form hx-post="/join" hx-target="#controls" hx-swap="outerHTML">
     <input type="text" name="username" placeholder="Username..." required>

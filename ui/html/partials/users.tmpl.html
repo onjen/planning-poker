@@ -1,8 +1,17 @@
 {{define "users"}}
-<h3>Current users</h3>
+<h3>Current users{{ if .Revealed }} &mdash; revealed{{ end }}</h3>
 <ul>
+     {{ $me := .CurrentUserID }}
+     {{ $revealed := .Revealed }}
      {{ range .Users }}
-     <li>{{ .Name }} <small>({{ .Role }})</small></li>
+     <li>
+       {{ .Name }} <small>({{ .Role }})</small>
+       {{ if .HasVoted }}
+         {{ if or $revealed (eq .ID $me) }}<strong>{{ .Vote }}</strong>{{ else }}voted{{ end }}
+       {{ else }}
+         &mdash;
+       {{ end }}
+     </li>
      {{ end }}
 </ul>
 {{end}}

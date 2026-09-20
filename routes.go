@@ -17,8 +17,8 @@ func (app *application) routes() http.Handler {
 	// Add write timeouts here
 	// router.Handler(http.MethodGet, "/", authenticated.ThenFunc(app.mainHandler))
 	router.HandlerFunc(http.MethodGet, "/", app.mainHandler)
-	router.HandlerFunc(http.MethodGet, "/trigger", app.triggerHandler)
-	router.HandlerFunc(http.MethodGet, "/status", app.statusHandler)
+	router.HandlerFunc(http.MethodGet, "/controls", app.controlsHandler)
+	router.HandlerFunc(http.MethodPost, "/vote", app.voteHandler)
 	router.HandlerFunc(http.MethodPost, "/join", app.newUserHandler)
 	router.HandlerFunc(http.MethodGet, "/users", app.usersHandler)
 	router.HandlerFunc(http.MethodGet, "/poll", app.pollHandler)

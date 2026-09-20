@@ -4,18 +4,13 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"time"
+	"strconv"
 
 	"github.com/tmaxmax/go-sse"
 )
 
 func (app *application) mainHandler(w http.ResponseWriter, r *http.Request) {
-	data := templateData{
-		IsModerator:     app.isModerator(r),
-		IsAuthenticated: app.isAuthenticated(r),
-		Users:           app.users,
-		Poll:            app.poll,
-	}
+	data := app.newTemplateData(r)
 
 	files := []string{
 		"./ui/html/base.tmpl.html",
@@ -40,26 +35,74 @@ func (app *application) mainHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (app *application) triggerHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) voteHandler(w http.ResponseWriter, r *http.Request) {
+	id, ok := app.userID(r)
+	if !ok {
+		http.Error(w, "Join before voting", http.StatusForbidden)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad form", http.StatusBadRequest)
+		return
+	}
+
+	points, err := strconv.Atoi(r.FormValue("points"))
+	if err != nil || !validPointValue(points) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		fmt.Fprint(w, "Not a valid story point value")
+		return
+	}
+
+	app.mu.Lock()
+	u := app.findUser(id)
+	if u == nil {
+		app.mu.Unlock()
+		http.Error(w, "Join before voting", http.StatusForbidden)
+		return
+	}
+	if app.poll == "" {
+		app.mu.Unlock()
+		http.Error(w, "No poll to vote on", http.StatusConflict)
+		return
+	}
+	if app.revealed {
+		app.mu.Unlock()
+		http.Error(w, "Voting is closed, wait for the next poll", http.StatusConflict)
+		return
+	}
+	u.Vote = points
+	if app.allVotedLocked() {
+		app.revealed = true
+	}
+	app.mu.Unlock()
+
 	newvoteE, err := sse.NewType("newvote")
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)
 		return
 	}
-	event := &sse.Message{
-		Type: newvoteE,
-	}
-	err = app.sseServer.Publish(event)
+	err = app.sseServer.Publish(&sse.Message{Type: newvoteE})
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)
 		return
 	}
+
+	app.controlsHandler(w, r)
 }
 
-func (app *application) statusHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, time.Now().Format(time.DateTime))
+func (app *application) allVotedLocked() bool {
+	if len(app.users) == 0 {
+		return false
+	}
+	for _, u := range app.users {
+		if !u.HasVoted() {
+			return false
+		}
+	}
+	return true
 }
 
 func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +117,8 @@ func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Username cannot be empty")
 		return
 	}
+
+	app.mu.Lock()
 	role := RoleUser
 	if len(app.users) == 0 {
 		role = RoleModerator
@@ -82,21 +127,20 @@ func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
 		Name: username,
 		Role: role,
 		ID:   len(app.users),
+		Vote: noVote,
 	}
 	app.users = append(app.users, &u)
+	app.mu.Unlock()
+
 	app.sessionManager.Put(r.Context(), "authenticatedUserID", u.ID)
 
-	// notify others to reload user list
 	pingU, err := sse.NewType("newuser")
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)
 		return
 	}
-	event := &sse.Message{
-		Type: pingU,
-	}
-	err = app.sseServer.Publish(event)
+	err = app.sseServer.Publish(&sse.Message{Type: pingU})
 	if err != nil {
 		app.logger.Error(err.Error())
 		http.Error(w, "InternalServerError", http.StatusInternalServerError)
@@ -105,16 +149,17 @@ func (app *application) newUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("HX-Trigger", `{"joined":{"target":"body"}}`)
 
-	data := templateData{IsAuthenticated: true}
-	app.renderPartial(w, "controls", data, "./ui/html/partials/controls.tmpl.html")
+	app.controlsHandler(w, r)
+}
+
+func (app *application) controlsHandler(w http.ResponseWriter, r *http.Request) {
+	app.renderPartial(w, "controls", app.newTemplateData(r),
+		"./ui/html/partials/controls.tmpl.html")
 }
 
 func (app *application) pollHandler(w http.ResponseWriter, r *http.Request) {
-	data := templateData{
-		IsModerator: app.isModerator(r),
-		Poll:        app.poll,
-	}
-	app.renderPartial(w, "poll", data, "./ui/html/partials/poll.tmpl.html")
+	app.renderPartial(w, "poll", app.newTemplateData(r),
+		"./ui/html/partials/poll.tmpl.html")
 }
 
 func (app *application) newPollHandler(w http.ResponseWriter, r *http.Request) {
@@ -134,9 +179,15 @@ func (app *application) newPollHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "Poll cannot be empty")
 		return
 	}
-	app.poll = poll
 
-	// notify everyone to reload the poll
+	app.mu.Lock()
+	app.poll = poll
+	app.revealed = false
+	for _, u := range app.users {
+		u.Vote = noVote
+	}
+	app.mu.Unlock()
+
 	newpollE, err := sse.NewType("newpoll")
 	if err != nil {
 		app.logger.Error(err.Error())
@@ -154,10 +205,8 @@ func (app *application) newPollHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) usersHandler(w http.ResponseWriter, r *http.Request) {
-	data := templateData{
-		Users: app.users,
-	}
-	app.renderPartial(w, "users", data, "./ui/html/partials/users.tmpl.html")
+	app.renderPartial(w, "users", app.newTemplateData(r),
+		"./ui/html/partials/users.tmpl.html")
 }
 
 func (app *application) renderPartial(

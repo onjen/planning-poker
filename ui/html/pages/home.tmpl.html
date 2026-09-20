@@ -7,12 +7,7 @@
 
 {{ template "poll" . }}
 
-<div hx-get="/status"
-     hx-trigger="newvote from:body"
-     >
-     Current Time
-</div>
-
-<div hx-get="/users" hx-trigger="load, newuser from:body">
+<div hx-get="/users"
+     hx-trigger="load, newuser from:body, newvote from:body, newpoll from:body">
 </div>
 {{ end }}
