@@ -2,6 +2,9 @@
 
 go + htmx4 + SSE (server sent events)
 
+
+![Screenshot](images/planning-poker.png "Planning Poker Screenshot")
+
 Run with
 ```bash
 nix run
