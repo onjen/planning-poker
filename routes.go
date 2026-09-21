@@ -16,10 +16,6 @@ func (app *application) routes() http.Handler {
 
 	router.Handler(http.MethodGet, "/events", app.sseServer)
 
-	//authenticated := alice.New(app.requireAuthentication)
-
-	// Add write timeouts here
-	// router.Handler(http.MethodGet, "/", authenticated.ThenFunc(app.mainHandler))
 	router.HandlerFunc(http.MethodGet, "/", app.mainHandler)
 	router.HandlerFunc(http.MethodGet, "/controls", app.controlsHandler)
 	router.HandlerFunc(http.MethodPost, "/vote", app.voteHandler)
