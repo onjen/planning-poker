@@ -67,36 +67,13 @@ func (app *application) isModerator(r *http.Request) bool {
 	return u != nil && u.Role == RoleModerator
 }
 
-func (app *application) newTemplateData(r *http.Request) templateData {
-	data := templateData{
-		IsAuthenticated: app.isAuthenticated(r),
-		PointValues:     pointValues,
-		Vote:            noVote,
-		CurrentUserID:   -1,
-	}
+func (u User) HasVoted() bool { return u.Vote != noVote }
 
-	app.mu.RLock()
-	defer app.mu.RUnlock()
-
-	data.Users = make([]User, len(app.users))
-	for i, u := range app.users {
-		data.Users[i] = *u
-		if u.HasVoted() {
-			data.VotedCount++
+func validPointValue(v int) bool {
+	for _, p := range pointValues {
+		if p == v {
+			return true
 		}
 	}
-	data.Poll = app.poll
-	data.Revealed = app.revealed
-
-	if id, ok := app.userID(r); ok {
-		if u := app.findUser(id); u != nil {
-			data.IsModerator = u.Role == RoleModerator
-			data.CurrentUserID = u.ID
-			data.Vote = u.Vote
-		}
-	}
-
-	data.CanVote = data.IsAuthenticated && data.Poll != "" && !data.Revealed
-
-	return data
+	return false
 }

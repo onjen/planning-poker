@@ -39,15 +39,6 @@ func (r Role) String() string {
 
 var pointValues = []int{0, 1, 2, 3, 5, 8}
 
-func validPointValue(v int) bool {
-	for _, p := range pointValues {
-		if p == v {
-			return true
-		}
-	}
-	return false
-}
-
 type User struct {
 	Name string
 	Role Role
@@ -56,8 +47,6 @@ type User struct {
 }
 
 const noVote = -1
-
-func (u User) HasVoted() bool { return u.Vote != noVote }
 
 type application struct {
 	config         config

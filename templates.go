@@ -3,6 +3,7 @@ package main
 import (
 	"html/template"
 	"io/fs"
+	"net/http"
 	"path/filepath"
 
 	"github.com/onjen/planning-poker/ui"
@@ -60,4 +61,38 @@ func newTemplateCache() (map[string]*template.Template, error) {
 	}
 
 	return cache, nil
+}
+
+func (app *application) newTemplateData(r *http.Request) templateData {
+	data := templateData{
+		IsAuthenticated: app.isAuthenticated(r),
+		PointValues:     pointValues,
+		Vote:            noVote,
+		CurrentUserID:   -1,
+	}
+
+	app.mu.RLock()
+	defer app.mu.RUnlock()
+
+	data.Users = make([]User, len(app.users))
+	for i, u := range app.users {
+		data.Users[i] = *u
+		if u.HasVoted() {
+			data.VotedCount++
+		}
+	}
+	data.Poll = app.poll
+	data.Revealed = app.revealed
+
+	if id, ok := app.userID(r); ok {
+		if u := app.findUser(id); u != nil {
+			data.IsModerator = u.Role == RoleModerator
+			data.CurrentUserID = u.ID
+			data.Vote = u.Vote
+		}
+	}
+
+	data.CanVote = data.IsAuthenticated && data.Poll != "" && !data.Revealed
+
+	return data
 }
