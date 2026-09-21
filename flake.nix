@@ -6,6 +6,11 @@
   };
 
   outputs = inputs: {
+    nixosModules = {
+      planning-poker = import ./nix/module.nix inputs.self;
+      default = inputs.self.nixosModules.planning-poker;
+    };
+
     packages = builtins.mapAttrs (system: pkgs: {
       planning-poker = pkgs.buildGo127Module {
         pname = "planning-poker";
